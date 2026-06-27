@@ -1,15 +1,50 @@
 """
 历史记录模块
 
-使用List保存用户的问答历史记录，
+使用List保存用户的问答历史记录，并持久化到JSON文件，
+确保重启后历史记录不会丢失。
 提供添加、获取和清空历史记录的功能。
 """
 
+import json
+import os
 from datetime import datetime
 
+# 历史记录文件路径
+HISTORY_FILE = os.path.join(os.path.dirname(__file__), "history.json")
 
 # 全局历史记录列表
 history_list = []
+
+
+def _load_history():
+    """
+    从JSON文件加载历史记录
+
+    Returns:
+        None
+    """
+    global history_list
+    if os.path.exists(HISTORY_FILE):
+        try:
+            with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                history_list = json.load(f)
+        except (json.JSONDecodeError, IOError):
+            history_list = []
+
+
+def _save_history():
+    """
+    将历史记录保存到JSON文件
+
+    Returns:
+        None
+    """
+    try:
+        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(history_list, f, ensure_ascii=False, indent=2)
+    except IOError:
+        pass
 
 
 def add_history(question, answer):
@@ -23,14 +58,13 @@ def add_history(question, answer):
     Returns:
         None
     """
-    # 创建历史记录项，包含问题、答案和时间戳
     history_item = {
         "question": question,
         "answer": answer,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
-    # 将记录添加到历史列表
     history_list.append(history_item)
+    _save_history()
 
 
 def get_history():
@@ -51,8 +85,8 @@ def clear_history():
     Returns:
         None
     """
-    # 清空历史记录列表
     history_list.clear()
+    _save_history()
 
 
 def get_history_count():
@@ -63,3 +97,6 @@ def get_history_count():
         int: 历史记录的总数量
     """
     return len(history_list)
+
+
+_load_history()
